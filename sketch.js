@@ -1,308 +1,476 @@
-// Código p5.js: Jogo de tabuleiro entre Agricultor e Empresário
-
 let posAgricultor = 0;
 let posEmpresario = 0;
 let currentPlayer = 1; // 1 = Empresário, 2 = Agricultor
 let gameState = 'jogando';
+let questionIndex = 0;
 let timer;
 let timeLimit = 35;
+let timeInterval;
+let activeQuestion = null;
+let feedbackMessage = '';
+let feedbackDuration = 0;
 
-let feedbackMessage = ""; // Mensagem de feedback para o jogador
-let feedbackTimeout;
-
-// Perguntas específicas para as casas
 let perguntas = [
+  // Espaço Rural
   {
-    pergunta: "Qual é o principal produto agrícola do Brasil?",
-    opcoes: ["Café", "Soja", "Algodão"],
-    resposta: 1
+    pergunta: "Qual o impacto da agricultura familiar na economia local?",
+    opcoes: [
+      "0) Gera emprego e renda",
+      "1) Diminui a produção de alimentos",
+      "2) Aumenta a urbanização",
+    ],
+    resposta: 0,
   },
   {
-    pergunta: "Qual é a sequência correta de cultivo em uma rotação?",
-    opcoes: ["Milho, Trigo, Soja", "Soja, Milho, Algodão", "Trigo, Feijão, Milho"],
-    resposta: 0
+    pergunta: "Como a agroecologia contribui para a sustentabilidade no campo?",
+    opcoes: [
+      "0) Utiliza produtos químicos em larga escala",
+      "1) Promove a biodiversidade e a preservação do solo",
+      "2) Foca apenas na produção em grande escala",
+    ],
+    resposta: 1,
   },
   {
-    pergunta: "O que caracteriza a agricultura familiar?",
-    opcoes: ["Uso de tecnologia", "Produção para o mercado", "Produção para o consumo próprio"],
-    resposta: 2
+    pergunta: "Quais são os principais desafios enfrentados pelos pequenos agricultores?",
+    opcoes: [
+      "0) Acesso a crédito e tecnologias",
+      "1) Excesso de terras disponíveis",
+      "2) Baixa demanda por produtos rurais",
+    ],
+    resposta: 0,
   },
   {
-    pergunta: "Qual é a função principal das áreas verdes nas cidades?",
-    opcoes: ["Estacionamento", "Recreação", "Comércio"],
-    resposta: 1
+    pergunta: "Qual é a importância da irrigação na agricultura moderna?",
+    opcoes: [
+      "0) Aumenta o consumo de água",
+      "1) Permite o cultivo em regiões áridas",
+      "2) Reduz a variedade de culturas",
+    ],
+    resposta: 1,
   },
   {
-    pergunta: "O que caracteriza um bairro residencial?",
-    opcoes: ["Muitas lojas", "Casas e apartamentos", "Indústrias"],
-    resposta: 1
+    pergunta: "Como as mudanças climáticas afetam a produção agrícola?",
+    opcoes: [
+      "0) Aumentam a produtividade de todas as culturas",
+      "1) Podem causar secas e inundações, afetando as colheitas",
+      "2) Não têm impacto significativo na agricultura",
+    ],
+    resposta: 1,
   },
   {
-    pergunta: "O que são transportes públicos?",
-    opcoes: ["Carros particulares", "Ônibus e trens", "Bicicletas"],
-    resposta: 1
+    pergunta: "Qual é o papel das cooperativas na agricultura?",
+    opcoes: [
+      "0) Promover a competição entre os agricultores",
+      "1) Facilitar a compra e venda de produtos, aumentando a renda dos associados",
+      "2) Reduzir a qualidade dos produtos agrícolas",
+    ],
+    resposta: 1,
   },
   {
-    pergunta: "Qual é uma característica de uma cidade sustentável?",
-    opcoes: ["Poluição alta", "Uso de energia renovável", "Desmatamento"],
-    resposta: 1
+    pergunta: "O que caracteriza a agricultura de precisão?",
+    opcoes: [
+      "0) Uso de técnicas tradicionais sem tecnologia",
+      "1) Aplicação de insumos com base em dados e informações geográficas",
+      "2) Cultivo em grandes extensões sem monitoramento",
+    ],
+    resposta: 1,
   },
   {
-    pergunta: "O que é um centro comercial?",
-    opcoes: ["Área de lazer", "Conjunto de lojas", "Escola"],
-    resposta: 1
+    pergunta: "Como a rotação de culturas contribui para a saúde do solo?",
+    opcoes: [
+      "0) Reduz a diversidade de nutrientes",
+      "1) Previne o esgotamento do solo e controla pragas",
+      "2) Aumenta a dependência de fertilizantes químicos",
+    ],
+    resposta: 1,
   },
   {
-    pergunta: "Qual é a função de uma praça na cidade?",
-    opcoes: ["Aumentar o tráfego", "Espaço de convivência", "Armazenar lixo"],
-    resposta: 1
+    pergunta: "Quais são as consequências da monocultura?",
+    opcoes: [
+      "0) Aumento da biodiversidade",
+      "1) Maior vulnerabilidade a pragas e doenças",
+      "2) Melhoria da qualidade do solo",
+    ],
+    resposta: 1,
   },
   {
-    pergunta: "O que é urbanização?",
-    opcoes: ["Aumento do espaço rural", "Redução da população", "Crescimento das cidades"],
-    resposta: 2
+    pergunta: "Qual é o impacto da tecnologia na produção agrícola?",
+    opcoes: [
+      "0) Diminui a eficiência dos agricultores",
+      "1) Melhora a produtividade e a gestão de recursos",
+      "2) Aumenta a dependência de mão de obra",
+    ],
+    resposta: 1,
+  },
+  // Espaço Urbano
+  {
+    pergunta: "Qual é a principal característica do espaço urbano?",
+    opcoes: [
+      "0) Baixa densidade populacional",
+      "1) Alta densidade populacional",
+      "2) Muitas áreas verdes",
+    ],
+    resposta: 1,
   },
   {
-    pergunta: "Um exemplo de poluição urbana?",
-    opcoes: ["Barulho", "Flores", "Águas limpas"],
-    resposta: 0
+    pergunta: "Qual é a função principal de um centro comercial?",
+    opcoes: [
+      "0) Produção agrícola",
+      "1) Vendas e compras",
+      "2) Educação",
+    ],
+    resposta: 1,
   },
   {
-    pergunta: "O que são favelas?",
-    opcoes: ["Comunidades carentes", "Áreas de luxo", "Parques"],
-    resposta: 0
+    pergunta: "O que caracteriza o transporte público urbano?",
+    opcoes: [
+      "0) Carros particulares",
+      "1) Ônibus e metrô",
+      "2) Bicicletas",
+    ],
+    resposta: 1,
   },
   {
-    pergunta: "Qual a vantagem do transporte coletivo?",
-    opcoes: ["Mais carros nas ruas", "Aumento da poluição", "Redução de tráfego"],
-    resposta: 2
-  },
-  // Perguntas sobre o espaço rural
-  {
-    pergunta: "Qual é a principal atividade econômica no espaço rural?",
-    opcoes: ["Agricultura", "Indústria", "Comércio"],
-    resposta: 0
+    pergunta: "Qual é um problema comum nas cidades grandes?",
+    opcoes: [
+      "0) Baixa poluição",
+      "1) Trânsito intenso",
+      "2) Pouca população",
+    ],
+    resposta: 1,
   },
   {
-    pergunta: "O que é uma propriedade rural?",
-    opcoes: ["Casa na cidade", "Loja", "Fazenda ou sítio"],
-    resposta: 2
+    pergunta: "Qual tipo de habitação é mais comum em áreas urbanas?",
+    opcoes: [
+      "0) Sítio",
+      "1) Apartamento",
+      "2) Chácara",
+    ],
+    resposta: 1,
   },
   {
-    pergunta: "Qual produto é um típico da pecuária?",
-    opcoes: ["Leite", "Frutas", "Pão"],
-    resposta: 1
+    pergunta: "O que é uma área de lazer?",
+    opcoes: [
+      "0) Um lugar para trabalho",
+      "1) Um espaço para diversão",
+      "2) Um mercado",
+    ],
+    resposta: 1,
   },
   {
-    pergunta: "O que caracteriza uma agricultura familiar?",
-    opcoes: ["Grandes plantações", "Produção para consumo próprio", "Indústria pesada"],
-    resposta: 1
+    pergunta: "Qual é um dos principais desafios nas cidades?",
+    opcoes: [
+      "0) Baixa criminalidade",
+      "1) Acesso a serviços públicos",
+      "2) Trânsito e poluição",
+    ],
+    resposta: 2,
   },
   {
-    pergunta: "Qual é uma técnica comum de cultivo?",
-    opcoes: ["Plantio direto", "Urbanização", "Transporte coletivo"],
-    resposta: 0
+    pergunta: "Qual é um evento comum em áreas urbanas?",
+    opcoes: [
+      "0) Festejos rurais",
+      "1) Shows e concertos",
+      "2) Feiras de produtos agrícolas",
+    ],
+    resposta: 1,
   },
   {
-    pergunta: "Qual é um benefício das roscas agrícolas?",
-    opcoes: ["Reduzir a biodiversidade", "Aumentar a produção alimentar", "Poluir o solo"],
-    resposta: 1
+    pergunta: "O que são zonas comerciais?",
+    opcoes: [
+      "0) Áreas para cultivo",
+      "1) Regiões com lojas e serviços",
+      "2) Espaços residenciais",
+    ],
+    resposta: 1,
   },
   {
-    pergunta: "O que é agroecologia?",
-    opcoes: ["Uso de agrotóxicos", "Pecuária intensiva", "Agricultura sustentável"],
-    resposta: 2
+    pergunta: "Qual é uma forma de reduzir a poluição nas cidades?",
+    opcoes: [
+      "0) Aumentar o uso de carros",
+      "1) Incentivar o transporte público",
+      "2) Construir mais fábricas",
+    ],
+    resposta: 1,
   },
-  {
-    pergunta: "Qual é uma atividade importante no espaço rural?",
-    opcoes: ["Silvicultura", "Comércio varejista", "Construção civil"],
-    resposta: 0
-  },
-  {
-    pergunta: "O que são culturas de subsistência?",
-    opcoes: ["Culturas para exportação", "Culturas industriais", "Culturas para consumo da família"],
-    resposta: 2
-  },
-  {
-    pergunta: "Qual é um exemplo de produto agrícola?",
-    opcoes: ["Arroz", "Carvão", "Plástico"],
-    resposta: 0
-  }
 ];
 
-let diceValue = 0;
-let rollingDice = false;
-let winner = null;
-
-const totalCasas = 50;
-const perguntasPosicoes = Array.from({ length: totalCasas }, (_, i) => (i + 1) % 5 === 0); // Casas com perguntas
+const totalCasas = 51;
+const perguntasPosicoes = Array.from({ length: totalCasas }, (_, i) => i % 5 === 0 && i !== 0);
 
 function setup() {
-  createCanvas(800, 600);
+  createCanvas(1080, 600);
   textAlign(CENTER, CENTER);
-  textSize(16);
+  textFont('Arial');
 }
 
 function draw() {
-  background(220);
-  
+  background(240);
   drawBoard();
+  drawStatusPanel();
   drawTimer();
-  drawFeedback(); // Chama a função para desenhar a mensagem de feedback
-
-  if (winner !== null) {
-    fill(0);
-    textSize(24);
-    text(`Parabéns! ${winner} ganhou um certificado de mérito e R$10.000!`, width / 2, height / 2);
-    noLoop();
+  
+  if (gameState === 'pergunta') {
+    drawQuestionOverlay();
+    highlightSelectedOption();
   }
-
-  drawStatus();
+  
+  if (feedbackDuration > 0) {
+    fill(0, 255, 0);
+    textSize(24);
+    text(feedbackMessage, width / 2, height / 2 + 100);
+    feedbackDuration--;
+  }
 }
 
 function drawBoard() {
-  for (let i = 0; i < totalCasas; i++) {
-    let x = 50 + i * 15;
-    fill(perguntasPosicoes[i] ? 'rgb(240,227,227)' : 'white');
-    stroke(0);
-    rect(x, height / 2 - 50, 15, 25);
-    fill(0);
-    text(i + 1, x + 7.5, height / 2 - 37.5);
+  // Fundo do tabuleiro com gradiente
+  noStroke();
+  for (let y = height / 2 - 100; y < height / 2 + 50; y++) {
+    let inter = map(y, height / 2 - 100, height / 2 + 50, 0, 1);
+    let c = lerpColor(color('#8BC34A'), color('#5a9c3e'), inter);
+    fill(c);
+    rect(30, y, width - 47, 1);
   }
-
-  let baseX = 50 + 7.5;
-
-  // Agricultor
-  let posAgriX = baseX + posAgricultor * 15;
-  fill('green');
-  rect(posAgriX - 5, height / 2 - 45, 10, 10);
-
-  // Empresário
-  let posEmpX = baseX + posEmpresario * 15;
-  fill('blue');
-  rect(posEmpX + 5, height / 2 - 45, 10, 10);
+  
+  // Borda decorativa
+  fill(0, 0, 0, 0);
+  stroke('#5a7e3e');
+  strokeWeight(4);
+  rect(30, height / 2 - 100, width - 45, 150, 15);
+  
+  // Casas do tabuleiro
+  for (let i = 0; i < totalCasas; i++) {
+    let x = 40 + i * 20;
+    let y = height / 2 - 50;
+    
+    // Estilo da casa
+    if (i === 0) {
+      fill('#4CAF50'); // Casa inicial (verde)
+    } else if (perguntasPosicoes[i]) {
+      fill('#FF5722'); // Casas de pergunta (vermelho)
+    } else {
+      fill(255); // Casas normais (branco)
+    }
+    
+    // Sombra
+    drawingContext.shadowBlur = 5;
+    drawingContext.shadowColor = 'rgba(0,0,0,0.2)';
+    
+    // Desenha casa
+    stroke(0);
+    strokeWeight(0.5);
+    rect(x, y, 18, 40, 5);
+    
+    // Número
+    fill(0);
+    noStroke();
+    textSize(i === 0 ? 9 : 10);
+    text(i === 0 ? "" : i, x + 9, y + 20);
+    
+    drawingContext.shadowBlur = 0;
+  }
+  
+  // Peças dos jogadores
+  drawPlayers();
 }
 
-function drawStatus() {
-  fill(0);
+function drawPlayers() {
+  // Agricultor (peça marrom)
+  drawPlayer(posAgricultor, '#795548', 3, 'A');
+  
+  // Empresário (peça azul)
+  drawPlayer(posEmpresario, '#2196F3', 27, 'E');
+}
+
+function drawPlayer(position, color, offsetY, initial) {
+  let x = 50 + position * 20 + -1;
+  let y = height / 2 - 45 + offsetY;
+  
+  // Sombra
+  drawingContext.shadowBlur = 10;
+  drawingContext.shadowColor = color;
+  
+  // Peça circular
+  fill(color);
+  ellipse(x, y, 16, 16);
+  
+  // Inicial do jogador
+  fill(255);
+  textSize(13);
+  text(initial, x, y + 1);
+  
+  drawingContext.shadowBlur = 0;
+}
+
+function drawStatusPanel() {
+  // Painel de fundo
+  fill(255);
+  stroke('#333');
+  strokeWeight(1);
+  rect(20, 20, width - 40, 80, 10);
+  
+  // Texto do status
+  fill('#333');
+  textSize(24);
+  text(`Vez do ${currentPlayer === 1 ? 'Empresário' : 'Agricultor'}`, width / 2, 50);
+  
+  // Instruções
   textSize(16);
-  text(`Jogador ${currentPlayer} é sua vez`, width / 2, 30);
-
   if (currentPlayer === 1) {
-    text("Pressione 'E' para rolar o dado, Empresário", width / 2, 60);
+    text("Pressione 'E' para rolar o dado", width / 2, 80);
   } else {
-    text("Pressione 'A' para rolar o dado, Agricultor", width / 2, 60);
-  }
-
-  if (diceValue > 0) {
-    text(`Dado: ${diceValue}`, width / 2, 90);
+    text("Pressione 'A' para rolar o dado", width / 2, 80);
   }
 }
 
 function drawTimer() {
   if (gameState === 'pergunta' && timer > 0) {
+    fill(200);
+    noStroke();
+    rect(width / 2 - 150, height - 50, 300, 20, 10);
+    
+    let w = map(timer, 0, timeLimit, 0, 300);
+    fill(255 - timer * 7, timer * 7, 0);
+    rect(width / 2 - 150, height - 50, w, 20, 10);
+    
     fill(0);
-    textSize(24);
-    text(`Tempo: ${timer} s`, width / 2, height - 30);
+    textSize(16);
+    text(`${timer} segundos`, width / 2, height - 40);
   }
 }
 
-function drawFeedback() {
-  if (feedbackMessage) {
-    fill(0);
-    textSize(24);
-    text(feedbackMessage, width / 2, height / 2);
+function drawQuestionOverlay() {
+  fill(0, 0, 0, 150);
+  rect(0, 0, width, height);
+  
+  fill(255);
+  stroke('#333');
+  strokeWeight(2);
+  rect(width / 2 - 250, height / 2 - 150, 500, 400, 20);
+  
+  fill('#333');
+  textSize(18);
+  text(activeQuestion.pergunta, width / 2, height / 2 - 130);
+  
+  textSize(16);
+  for (let i = 0; i < activeQuestion.opcoes.length; i++) {
+    let optionY = height / 2 - 15 + i * 60;
+    fill(i === selectedOption ? 200 : 240);
+    rect(width / 2 - 120, optionY, 240, 40, 5);
+    
+    fill('#333');
+    text(activeQuestion.opcoes[i], width / 2, optionY + 20);
+  }
+}
+
+function highlightSelectedOption() {
+  if (selectedOption >= 0) {
+    let optionY = height / 2 - 15 + selectedOption * 60;
+    fill(200, 230, 255);
+    rect(width / 2 - 120, optionY, 240, 40, 5);
+    fill('#333');
+    textAlign(LEFT, CENTER);
+    text(activeQuestion.opcoes[selectedOption], width / 2 - 110, optionY + 20);
+    textAlign(CENTER, CENTER);
   }
 }
 
 function keyPressed() {
-  if (gameState !== 'jogando') return;
-
-  if ((key === 'a' || key === 'A') && currentPlayer === 2 && !rollingDice) {
-    rollingDice = true;
-    rollDice();
+  if (gameState === 'jogando') {
+    if ((key === 'e' || key === 'E') && currentPlayer === 1) {
+      rollDice();
+    } else if ((key === 'a' || key === 'A') && currentPlayer === 2) {
+      rollDice();
+    }
+  } else if (gameState === 'pergunta') {
+    if (key === '0') {
+      selectedOption = 0;
+      setTimeout(() => handleQuestionAnswer(0), 100);
+    } else if (key === '1') {
+      selectedOption = 1;
+      setTimeout(() => handleQuestionAnswer(1), 100);
+    } else if (key === '2') {
+      selectedOption = 2;
+      setTimeout(() => handleQuestionAnswer(2), 100);
+    } else if (key === 'Enter' && selectedOption >= 0) {
+      handleQuestionAnswer(selectedOption);
+    }
+    return false;
   }
-
-  if ((key === 'e' || key === 'E') && currentPlayer === 1 && !rollingDice) {
-    rollingDice = true;
-    rollDice();
-  }
+  return true;
 }
 
 function rollDice() {
-  diceValue = floor(random(1, 7));
-  setTimeout(() => {
-    movePlayer();
-    rollingDice = false;
-  }, 500);
-}
-
-function movePlayer() {
+  let diceValue = floor(random(1, 7));
+  
   if (currentPlayer === 1) {
     posEmpresario += diceValue;
     if (posEmpresario >= totalCasas) {
-      winner = 'Empresário';
-    } else {
-      checkQuestion(posEmpresario);
+      posEmpresario = totalCasas - 1; // Limite do tabuleiro
     }
-    currentPlayer = 2;
+    checkQuestion(posEmpresario);
   } else {
     posAgricultor += diceValue;
     if (posAgricultor >= totalCasas) {
-      winner = 'Agricultor';
-    } else {
-      checkQuestion(posAgricultor);
+      posAgricultor = totalCasas - 1; // Limite do tabuleiro
     }
-    currentPlayer = 1;
+    checkQuestion(posAgricultor);
   }
+  
+  currentPlayer = currentPlayer === 1 ? 2 : 1; // Troca de jogador
 }
 
 function checkQuestion(pos) {
-  if (perguntas[pos]) {
+  if (perguntasPosicoes[pos]) {
     gameState = 'pergunta';
-    askQuestion(pos);
+    activeQuestion = perguntas[questionIndex % perguntas.length];
+    askQuestion();
   }
 }
 
-function askQuestion(pos) {
-  let q = perguntas[pos]; // Pergunta específica para a casa
-
+function askQuestion() {
   timer = timeLimit;
-  let timeInterval = setInterval(() => {
+  selectedOption = -1;
+  timeInterval = setInterval(() => {
     timer--;
     if (timer <= 0) {
       clearInterval(timeInterval);
-      gameState = 'jogando'; // Não mudar a posição
+      handleWrongAnswer();
+      gameState = 'jogando';
     }
   }, 1000);
+}
 
-  let answer = prompt(
-    `${q.pergunta}\nOpções:\n0: ${q.opcoes[0]}\n1: ${q.opcoes[1]}\n2: ${q.opcoes[2]}`
-  );
-  answer = int(answer);
-
+function handleQuestionAnswer(answer) {
   clearInterval(timeInterval);
-
-  if (answer === q.resposta) {
-    // Mensagem de resposta correta
-    feedbackMessage = "✅Parabéns, resposta correta!✅😎";
-    setTimeout(() => {
-      feedbackMessage = ""; // Limpa a mensagem após 0,1 segundos
-    }, 8000);
-    // Avança apenas o número do dado
+  
+  if (answer === activeQuestion.resposta) {
+    feedbackMessage = "✅ Parabéns, resposta correta! ✅😎";
+    feedbackDuration = 60; // Durar 1 segundo
     if (currentPlayer === 1) {
-      posEmpresario += diceValue; 
+      posEmpresario = min(posEmpresario + 2, totalCasas);
     } else {
-      posAgricultor += diceValue; 
+      posAgricultor = min(posAgricultor + 2, totalCasas);
     }
   } else {
-    // Mensagem de resposta incorreta
-    feedbackMessage = "❌Pergunta incorreta❌😢";
-    setTimeout(() => {
-      feedbackMessage = ""; // Limpa a mensagem após 0,1 segundos
-    }, 8000);
-    // Permanece na mesma casa
+    feedbackMessage = "❌ Pergunta incorreta ❌😢";
+    feedbackDuration = 60; // Durar 1 segundo
+    if (currentPlayer === 1) {
+      posEmpresario = max(0, posEmpresario - 2);
+    } else {
+      posAgricultor = max(0, posAgricultor - 2);
+    }
   }
-
+  
+  questionIndex++;
   gameState = 'jogando';
+}
+
+function handleWrongAnswer() {
+  if (currentPlayer === 1) {
+    posEmpresario = max(0, posEmpresario - 2);
+  } else {
+    posAgricultor = max(0, posAgricultor - 2);
+  }
 }
