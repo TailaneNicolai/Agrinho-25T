@@ -9,6 +9,7 @@ let timeInterval;
 let activeQuestion = null;
 let feedbackMessage = '';
 let feedbackDuration = 0;
+let victoryMessage = ''; // Mensagem de vitória
 
 let perguntas = [
   // Espaço Rural
@@ -25,10 +26,10 @@ let perguntas = [
     pergunta: "Como a agroecologia contribui para a sustentabilidade no campo?",
     opcoes: [
       "0) Utiliza produtos químicos em larga escala",
-      "1) Promove a biodiversidade e a preservação do solo",
-      "2) Foca apenas na produção em grande escala",
+      "1) Foca apenas na produção em grande escala",
+      "2) Promove a biodiversidade e a preservação do solo",
     ],
-    resposta: 1,
+    resposta: 2,
   },
   {
     pergunta: "Quais são os principais desafios enfrentados pelos pequenos agricultores?",
@@ -60,29 +61,29 @@ let perguntas = [
   {
     pergunta: "Qual é o papel das cooperativas na agricultura?",
     opcoes: [
-      "0) Promover a competição entre os agricultores",
-      "1) Facilitar a compra e venda de produtos, aumentando a renda dos associados",
+      "0) Facilitar a compra e venda de produtos, aumentando a renda dos associados",
+      "1) Promover a competição entre os agricultores",
       "2) Reduzir a qualidade dos produtos agrícolas",
     ],
-    resposta: 1,
+    resposta: 0,
   },
   {
     pergunta: "O que caracteriza a agricultura de precisão?",
     opcoes: [
       "0) Uso de técnicas tradicionais sem tecnologia",
-      "1) Aplicação de insumos com base em dados e informações geográficas",
-      "2) Cultivo em grandes extensões sem monitoramento",
+      "1) Cultivo em grandes extensões sem monitoramento",
+      "2) Aplicação de insumos com base em dados e informações geográficas",
     ],
-    resposta: 1,
+    resposta: 2,
   },
   {
     pergunta: "Como a rotação de culturas contribui para a saúde do solo?",
     opcoes: [
       "0) Reduz a diversidade de nutrientes",
-      "1) Previne o esgotamento do solo e controla pragas",
-      "2) Aumenta a dependência de fertilizantes químicos",
+      "1) Aumenta a dependência de fertilizantes químicos",
+      "2) Previne o esgotamento do solo e controla pragas",
     ],
-    resposta: 1,
+    resposta: 2,
   },
   {
     pergunta: "Quais são as consequências da monocultura?",
@@ -106,29 +107,29 @@ let perguntas = [
   {
     pergunta: "Qual é a principal característica do espaço urbano?",
     opcoes: [
-      "0) Baixa densidade populacional",
-      "1) Alta densidade populacional",
+      "0) Alta densidade populacional",
+      "1) Baixa densidade populacional",
       "2) Muitas áreas verdes",
     ],
-    resposta: 1,
+    resposta: 0,
   },
   {
     pergunta: "Qual é a função principal de um centro comercial?",
     opcoes: [
       "0) Produção agrícola",
-      "1) Vendas e compras",
-      "2) Educação",
+      "1) Educação",
+      "2) Vendas e compras",
     ],
-    resposta: 1,
+    resposta: 2,
   },
   {
     pergunta: "O que caracteriza o transporte público urbano?",
     opcoes: [
       "0) Carros particulares",
-      "1) Ônibus e metrô",
-      "2) Bicicletas",
+      "1) Bicicletas",
+      "2) Ônibus e metrô",
     ],
-    resposta: 1,
+    resposta: 2,
   },
   {
     pergunta: "Qual é um problema comum nas cidades grandes?",
@@ -151,11 +152,11 @@ let perguntas = [
   {
     pergunta: "O que é uma área de lazer?",
     opcoes: [
-      "0) Um lugar para trabalho",
-      "1) Um espaço para diversão",
+      "0) Um espaço para diversão",
+      "1) Um lugar para trabalho",
       "2) Um mercado",
     ],
-    resposta: 1,
+    resposta: 0,
   },
   {
     pergunta: "Qual é um dos principais desafios nas cidades?",
@@ -179,10 +180,10 @@ let perguntas = [
     pergunta: "O que são zonas comerciais?",
     opcoes: [
       "0) Áreas para cultivo",
-      "1) Regiões com lojas e serviços",
-      "2) Espaços residenciais",
+      "1) Espaços residenciais",
+      "2) Regiões com lojas e serviços"
     ],
-    resposta: 1,
+    resposta: 2,
   },
   {
     pergunta: "Qual é uma forma de reduzir a poluição nas cidades?",
@@ -196,7 +197,7 @@ let perguntas = [
 ];
 
 const totalCasas = 51;
-const perguntasPosicoes = Array.from({ length: totalCasas }, (_, i) => i % 5 === 0 && i !== 0);
+const perguntasPosicoes = [0, 3, 5, 8, 10, 13, 15, 18, 20, 23, 25, 28, 30, 33, 35, 38, 40, 43, 45, 48]; // Casas para perguntas
 
 function setup() {
   createCanvas(1080, 600);
@@ -220,6 +221,13 @@ function draw() {
     textSize(24);
     text(feedbackMessage, width / 2, height / 2 + 100);
     feedbackDuration--;
+  }
+
+  // Exibir mensagem de vitória
+  if (victoryMessage) {
+    fill(0, 255, 0);
+    textSize(32);
+    text(victoryMessage, width / 2, height / 2);
   }
 }
 
@@ -247,8 +255,8 @@ function drawBoard() {
     // Estilo da casa
     if (i === 0) {
       fill('#4CAF50'); // Casa inicial (verde)
-    } else if (perguntasPosicoes[i]) {
-      fill('#FF5722'); // Casas de pergunta (vermelho)
+    } else if (perguntasPosicoes.includes(i)) {
+      fill('#FFA500'); // Casas de pergunta (laranja)
     } else {
       fill(255); // Casas normais (branco)
     }
@@ -422,10 +430,18 @@ function rollDice() {
 }
 
 function checkQuestion(pos) {
-  if (perguntasPosicoes[pos]) {
+  if (perguntasPosicoes.includes(pos)) {
     gameState = 'pergunta';
-    activeQuestion = perguntas[questionIndex % perguntas.length];
+    activeQuestion = perguntas[perguntasPosicoes.indexOf(pos)]; // Pega a pergunta correspondente
     askQuestion();
+  } else if (pos === 50) {
+    // Mensagem de vitória se chegar à casa 50
+    if (currentPlayer === 1) {
+      victoryMessage = "Parabéns😄! Ganhou uma empresa de trator, R$ 10.000 reais.";
+    } else {
+      victoryMessage = "Parabéns😁! Ganhou um trator, R$ 10.000 reais.";
+    }
+    noLoop(); // Para o jogo
   }
 }
 
@@ -448,11 +464,6 @@ function handleQuestionAnswer(answer) {
   if (answer === activeQuestion.resposta) {
     feedbackMessage = "✅ Parabéns, resposta correta! ✅😎";
     feedbackDuration = 60; // Durar 1 segundo
-    if (currentPlayer === 1) {
-      posEmpresario = min(posEmpresario + 2, totalCasas);
-    } else {
-      posAgricultor = min(posAgricultor + 2, totalCasas);
-    }
   } else {
     feedbackMessage = "❌ Pergunta incorreta ❌😢";
     feedbackDuration = 60; // Durar 1 segundo
